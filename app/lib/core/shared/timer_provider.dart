@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 enum AppState { idle, onboarding, breakReady, breakInProgress, reflection }
 
@@ -41,18 +42,18 @@ class Settings {
       );
 }
 
-class TimerProvider with ChangeNotifier {
-  AppState _appState = AppState.onboarding;
+class TimerProvider extends ChangeNotifier {
+  int _secondsRemaining = 1200; // Default 20 min
+  AppState _appState = AppState.idle;
   Settings _settings = Settings();
-  int _secondsRemaining = 0;
   int _breaksCompletedToday = 0;
   String? _breakType;
   int _totalBreakSeconds = 20;
   Timer? _timer;
 
+  int get secondsRemaining => _secondsRemaining;
   AppState get appState => _appState;
   Settings get settings => _settings;
-  int get secondsRemaining => _secondsRemaining;
   int get breaksCompletedToday => _breaksCompletedToday;
   String? get breakType => _breakType;
   int get totalBreakSeconds => _totalBreakSeconds;
@@ -64,17 +65,36 @@ class TimerProvider with ChangeNotifier {
   Future<void> _init() async {
     await _loadSettings();
     await _loadState();
+    _listenToBackgroundService();
     _startTimerLogic();
+    
+    // Força uma atualização inicial se o serviço já estiver rodando
+    FlutterBackgroundService().invoke("get_status");
+  }
+
+  void _listenToBackgroundService() {
+    FlutterBackgroundService().on('update').listen((event) {
+      if (event != null && event['seconds_remaining'] != null) {
+        _secondsRemaining = event['seconds_remaining'];
+
+        // Se o tempo acabar, muda o estado para breakReady
+        if (_secondsRemaining <= 0) {
+          _appState = AppState.breakReady;
+        } else {
+          _appState = AppState.idle;
+        }
+        notifyListeners();
+      }
+    });
   }
 
   void _startTimerLogic() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_appState == AppState.idle) {
-        if (_secondsRemaining > 0) {
-          _secondsRemaining--;
-          notifyListeners();
-        } else {
+        // O timer da Home agora é sincronizado pelo Background Service
+        // Não decrementamos aqui para evitar conflito
+        if (_secondsRemaining <= 0) {
           _appState = AppState.breakReady;
           _saveState();
           notifyListeners();
@@ -108,9 +128,9 @@ class TimerProvider with ChangeNotifier {
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     final appStateStr = prefs.getString('appState');
-    final hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
-    
-    if (!hasCompletedOnboarding) {
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
+    if (!hasSeenOnboarding) {
       _appState = AppState.onboarding;
     } else if (appStateStr != null) {
       _appState = AppState.values.firstWhere(
@@ -121,15 +141,15 @@ class TimerProvider with ChangeNotifier {
       _appState = AppState.idle;
       _secondsRemaining = _settings.intervalMinutes * 60;
     }
-    
+
     _breaksCompletedToday = prefs.getInt('breaksCompletedToday') ?? 0;
-    
+
     if (_appState == AppState.idle) {
       _secondsRemaining = _settings.intervalMinutes * 60;
     } else if (_appState == AppState.breakInProgress) {
       _secondsRemaining = _settings.breakDurationSeconds;
     }
-    
+
     notifyListeners();
   }
 
@@ -148,7 +168,7 @@ class TimerProvider with ChangeNotifier {
     _appState = AppState.idle;
     _secondsRemaining = _settings.intervalMinutes * 60;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('hasCompletedOnboarding', true);
+    await prefs.setBool('hasSeenOnboarding', true);
     _saveState();
     notifyListeners();
   }

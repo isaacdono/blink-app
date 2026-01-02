@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/shared/timer_provider.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  void _showPermissionDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showHourPicker(BuildContext context, String title, int currentValue, Function(int) onSelected) {
     showModalBottomSheet(
@@ -242,6 +261,60 @@ class SettingsPage extends StatelessWidget {
                   ),
                 )).toList(),
               ),
+              const SizedBox(height: 32),
+              
+              // Permissions
+              Row(
+                children: [
+                  const Icon(Icons.security, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  const Text("Permissões", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      title: const Text("Notificações"),
+                      subtitle: const Text("Necessário para o timer em segundo plano"),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () async {
+                        final status = await Permission.notification.status;
+                        if (status.isGranted) {
+                          if (context.mounted) {
+                            _showPermissionDialog(context, "Notificações", "A permissão de notificações já foi concedida.");
+                          }
+                        } else {
+                          await Permission.notification.request();
+                        }
+                      },
+                    ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      title: const Text("Permitir Sobreposição"),
+                      subtitle: const Text("Necessário para pausas em segundo plano"),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () async {
+                        final bool status = await FlutterOverlayWindow.isPermissionGranted();
+                        if (!status) {
+                          await FlutterOverlayWindow.requestPermission();
+                        } else {
+                          if (context.mounted) {
+                            _showPermissionDialog(context, "Sobreposição", "A permissão de sobreposição de tela já foi concedida.");
+                          }
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 48),
 
               // Footer

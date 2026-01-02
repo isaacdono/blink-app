@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/shared/timer_provider.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -23,8 +24,13 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
       'icon': Icons.visibility,
     },
     {
+      'title': "Notificações",
+      'description': "Para manter o timer funcionando em segundo plano, precisamos enviar notificações.",
+      'icon': Icons.notifications_active,
+    },
+    {
       'title': "Sobreposição de tela",
-      'description': "Para funcionar mostrar a pausa no tempo certo, o Blink precisa da permissão de sobreposição de tela.",
+      'description': "Para mostrar a pausa no tempo certo, o Blink precisa da permissão de sobreposição de tela.",
       'icon': Icons.layers,
     },
     {
@@ -178,7 +184,7 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                   elevation: 0,
                 ),
                 child: Text(
-                  currentStep == 1 ? "Configurar permissão" : (currentStep == steps.length - 1 ? "Começar" : "Próximo"),
+                  (currentStep == 1 || currentStep == 2) ? "Configurar permissão" : (currentStep == steps.length - 1 ? "Começar" : "Próximo"),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -192,7 +198,27 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
 
   Future<void> _handleNext() async {
     if (currentStep == 1) {
-      // Check current permission status
+      // Notification Permission
+      final status = await Permission.notification.status;
+      if (status.isGranted) {
+        setState(() => currentStep++);
+        return;
+      }
+      final result = await Permission.notification.request();
+      if (result.isGranted) {
+        setState(() => currentStep++);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('A permissão de notificação é necessária para o timer.')),
+          );
+        }
+      }
+      return;
+    }
+
+    if (currentStep == 2) {
+      // Overlay Permission
       final status = await Permission.systemAlertWindow.status;
       if (status.isGranted) {
         setState(() => currentStep++);

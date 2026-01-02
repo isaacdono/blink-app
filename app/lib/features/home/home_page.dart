@@ -80,6 +80,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ),
                     Row(
                       children: [
+                        if (false) // Botão de teste escondido
                         IconButton(
                           onPressed: () {
                             timerProvider.testBreak();
