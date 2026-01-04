@@ -13,6 +13,7 @@ class Settings {
   bool meditationMode;
   int activeStartHour;
   int activeEndHour;
+  bool softMode;
 
   Settings({
     this.intervalMinutes = 20,
@@ -21,6 +22,7 @@ class Settings {
     this.meditationMode = false,
     this.activeStartHour = 9,
     this.activeEndHour = 18,
+    this.softMode = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +32,7 @@ class Settings {
         'meditationMode': meditationMode,
         'activeStartHour': activeStartHour,
         'activeEndHour': activeEndHour,
+        'softMode': softMode,
       };
 
   factory Settings.fromJson(Map<String, dynamic> json) => Settings(
@@ -39,6 +42,7 @@ class Settings {
         meditationMode: json['meditationMode'] ?? false,
         activeStartHour: json['activeStartHour'] ?? 9,
         activeEndHour: json['activeEndHour'] ?? 18,
+        softMode: json['softMode'] ?? false,
       );
 }
 

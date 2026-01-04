@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import '../../core/shared/timer_provider.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -262,6 +263,26 @@ class SettingsPage extends StatelessWidget {
                 )).toList(),
               ),
               const SizedBox(height: 32),
+
+              // Soft Mode Switch
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
+                child: SwitchListTile(
+                  title: const Text("Modo Suave", style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Mostra apenas uma notificação em vez de bloquear a tela inteira."),
+                  value: timerProvider.settings.softMode,
+                  activeColor: Theme.of(context).primaryColor,
+                  onChanged: (bool value) {
+                    timerProvider.updateSettings(timerProvider.settings..softMode = value);
+                  },
+                ),
+              ),
+              const SizedBox(height: 32),
               
               // Permissions
               Row(
@@ -316,6 +337,27 @@ class SettingsPage extends StatelessWidget {
               ),
 
               const SizedBox(height: 48),
+
+              // Botão de Teste Rápido
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    FlutterBackgroundService().invoke('force_overlay');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Comando enviado! O overlay deve aparecer em breve.')),
+                    );
+                  },
+                  icon: const Icon(Icons.bug_report),
+                  label: const Text("Testar Overlay Agora"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.withOpacity(0.1),
+                    foregroundColor: Colors.orange,
+                    elevation: 0,
+                    minimumSize: const Size(200, 50),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Footer
               Center(

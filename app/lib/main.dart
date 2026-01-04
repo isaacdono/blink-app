@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'core/shared/timer_provider.dart';
 import 'core/shared/theme.dart';
 import 'features/home/home_page.dart';
@@ -11,9 +12,34 @@ import 'features/settings/settings_page.dart';
 import 'core/services/background_service.dart';
 import 'features/break/overlay_widget.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeService();
+
+  // Configuração de notificações locais para lidar com o clique
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('ic_stat_blink');
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse response) {
+      if (response.payload == 'break_page') {
+        // Navega para a tela de break
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          GoRouter.of(context).go('/break');
+        }
+      }
+    },
+  );
+
   final prefs = await SharedPreferences.getInstance();
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
   runApp(MyApp(hasSeenOnboarding: hasSeenOnboarding));
@@ -22,7 +48,14 @@ void main() async {
 @pragma("vm:entry-point")
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const OverlayWidget());
+  print("FLUTTER: overlayMain started");
+  runApp(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme, // Usa o mesmo tema do app principal
+      home: OverlayWidget(key: UniqueKey()), // Força recriação do widget para resetar estado
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -46,6 +79,7 @@ class MyApp extends StatelessWidget {
 
 GoRouter _router(bool hasSeenOnboarding) {
   return GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: hasSeenOnboarding ? '/' : '/onboarding',
     routes: [
       GoRoute(
