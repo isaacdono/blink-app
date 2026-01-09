@@ -11,9 +11,9 @@ class OverlayWidget extends StatefulWidget {
 }
 
 class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateMixin {
-  bool _isPreparing = true;
-  bool _isReflecting = false;
-  int _prepSeconds = 5;
+  late bool _isPreparing;
+  late bool _isReflecting;
+  late int _prepSeconds;
   final int _totalBreakSeconds = 20;
   DateTime? _breakStartTime;
   Timer? _timer;
@@ -21,12 +21,20 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
   late AnimationController _floatController;
   late Animation<double> _floatAnimation;
 
+  void _resetState() {
+    _isPreparing = true;
+    _isReflecting = false;
+    _prepSeconds = 5;
+    _breakStartTime = null;
+  }
+
   @override
   void initState() {
     super.initState();
     // Força modo imersivo (esconde barra de status e navegação)
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     
+    _resetState();
     _startTimer();
     _floatController = AnimationController(
       duration: const Duration(seconds: 3),
@@ -78,15 +86,12 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     // Garante que a barra de status tenha texto claro (branco) sobre o fundo escuro
-    // Se estiver na reflexão (fundo claro), usa dark.
-    SystemChrome.setSystemUIOverlayStyle(
-      _isReflecting ? SystemUiOverlayStyle.dark : SystemUiOverlayStyle.light
-    );
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     
     return Scaffold(
-      backgroundColor: _isReflecting ? Theme.of(context).scaffoldBackgroundColor : Colors.black,
+      backgroundColor: Colors.black,
       body: Container(
-        color: _isReflecting ? Theme.of(context).scaffoldBackgroundColor : Colors.black,
+        color: Colors.black,
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -207,7 +212,7 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Colors.green.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
           child: const Icon(
@@ -219,7 +224,11 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
         const SizedBox(height: 40),
         const Text(
           "Pausa concluída!",
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 24),
         Padding(
@@ -227,8 +236,9 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
           child: Text(
             "Tem certeza que quer continuar no celular?",
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 16,
               height: 1.4,
             ),
           ),
@@ -236,9 +246,11 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
         const SizedBox(height: 64),
         ElevatedButton(
           onPressed: () {
-             FlutterOverlayWindow.closeOverlay();
+            FlutterOverlayWindow.closeOverlay();
           },
           style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 64),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
@@ -256,7 +268,7 @@ class _OverlayWidgetState extends State<OverlayWidget> with TickerProviderStateM
             "Sair um pouco",
             style: TextStyle(
               fontSize: 16,
-              color: Theme.of(context).primaryColor,
+              color: Colors.white,
               fontWeight: FontWeight.w600,
             ),
           ),

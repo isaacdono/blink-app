@@ -215,6 +215,16 @@ class TimerProvider extends ChangeNotifier {
   void updateSettings(Settings newSettings) {
     _settings = newSettings;
     _saveSettings();
+    
+    // Envia as novas configurações para o serviço imediatamente
+    FlutterBackgroundService().invoke("update_settings", {
+      "intervalMinutes": _settings.intervalMinutes,
+      "breakDurationSeconds": _settings.breakDurationSeconds,
+      "softMode": _settings.softMode,
+      "activeStartHour": _settings.activeStartHour,
+      "activeEndHour": _settings.activeEndHour,
+    });
+    
     // If we are in idle mode, we might want to reset the timer to the new interval
     if (_appState == AppState.idle) {
       _secondsRemaining = _settings.intervalMinutes * 60;
