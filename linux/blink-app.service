@@ -1,0 +1,19 @@
+[Unit]
+Description=Blink Eye Rest Reminder
+Documentation=file:///home/isaac/Documents/blink-app/linux/README.md
+After=graphical-session-start.target
+Wants=graphical-session-start.target
+
+[Service]
+Type=simple
+ExecStart=%h/Documents/blink-app/linux/blink-app.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Run as user, not system-wide
+User=%u
+
+[Install]
+WantedBy=graphical-session.target

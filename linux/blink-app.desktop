@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Blink - Eye Rest Reminder
+Comment=20/20/20 Eye Rest Reminder - Reminds you to rest your eyes every 20 minutes
+Exec=python3 /home/isaac/Documents/blink-app/linux/blink-app.py
+Icon=eye
+Categories=Utility;Health;
+Terminal=false
+Hidden=false
+StartupNotify=false
+
+# Autostart settings
+X-GNOME-Autostart-enabled=true
+X-KDE-autostart-after=panel
